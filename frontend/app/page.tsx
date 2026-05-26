@@ -1,6 +1,7 @@
 "use client";
 
 import { Activity, RadioTower } from "lucide-react";
+import { CommandHistoryPanel } from "@/components/command-history-panel";
 import { ControllerStrip } from "@/components/controller-strip";
 import { ControlPanel } from "@/components/control-panel";
 import { DeviceCardGrid } from "@/components/device-card-grid";
@@ -51,6 +52,7 @@ export default function DashboardPage() {
           <div className="space-y-4">
             <ControlPanel />
             <TerminalPanel />
+            <CommandHistoryPanel />
           </div>
         </div>
       </div>

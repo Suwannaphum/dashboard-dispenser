@@ -38,6 +38,55 @@ export type EventEntry = {
   data?: Record<string, unknown>;
 };
 
+export type JsonAsgType = "Realtime" | "Event" | "CommandResponse";
+
+export type JsonAsgEnvelope = {
+  Protocol: "jsonASG";
+  DeviceID: string;
+  Type: JsonAsgType;
+  Packet: Record<string, unknown>;
+  updated_at?: string;
+};
+
+export type StreamFilter = JsonAsgType | "All";
+
+export type StreamPacket = {
+  id: string;
+  ts: string;
+  controller_id: string;
+  type: JsonAsgType;
+  envelope: JsonAsgEnvelope;
+};
+
+export type EventLogRow = {
+  id: string;
+  ts: string;
+  controller_id: string;
+  category?: string;
+  error_code?: string;
+  message?: string;
+  device_id?: number;
+  pump_addr?: number;
+  nozzle_id?: number;
+  command?: string;
+  occurred_at?: string;
+  raw: Record<string, unknown>;
+};
+
+export type CommandResponseRow = {
+  id: string;
+  ts: string;
+  controller_id: string;
+  command?: string;
+  response_code?: string;
+  success?: boolean;
+  message?: string;
+  error_code?: string;
+  device_id?: number;
+  occurred_at?: string;
+  raw: Record<string, unknown>;
+};
+
 export type BrowserCommand = {
   action: "start" | "stop" | "preset" | "setPrice" | "setDateTime" | "deleteTransaction" | "setMonitorMode" | "cancelPreset";
   params?: Record<string, unknown>;

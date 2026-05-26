@@ -2,13 +2,29 @@
 
 import { useEffect } from "react";
 import { WS_BASE, api } from "@/lib/api";
+import type { CommandResponseRow, EventLogRow, JsonAsgEnvelope, StreamPacket } from "@/lib/types";
 import { useDashboardStore } from "@/stores/dashboard-store";
+
+function numberValue(value: unknown): number | undefined {
+  return typeof value === "number" ? value : undefined;
+}
+
+function stringValue(value: unknown): string | undefined {
+  return typeof value === "string" ? value : undefined;
+}
+
+function objectArray(value: unknown): Record<string, unknown>[] {
+  return Array.isArray(value) ? value.filter((item): item is Record<string, unknown> => typeof item === "object" && item !== null && !Array.isArray(item)) : [];
+}
 
 export function useDashboardSocket() {
   const setControllers = useDashboardStore((state) => state.setControllers);
   const setDevices = useDashboardStore((state) => state.setDevices);
   const setEvents = useDashboardStore((state) => state.setEvents);
   const addEvent = useDashboardStore((state) => state.addEvent);
+  const addEventLogs = useDashboardStore((state) => state.addEventLogs);
+  const addCommandResponses = useDashboardStore((state) => state.addCommandResponses);
+  const addStreamPacket = useDashboardStore((state) => state.addStreamPacket);
   const setConnected = useDashboardStore((state) => state.setConnected);
 
   useEffect(() => {
@@ -38,15 +54,61 @@ export function useDashboardSocket() {
         if (payload.events) setEvents(payload.events);
         if (payload.event) addEvent(payload.event);
         if (payload.envelope) {
-          addEvent({
-            ts: payload.envelope.updated_at ?? new Date().toISOString(),
-            level: payload.type === "Realtime" ? "status" : "success",
-            source: payload.controller_id ?? "controller",
-            message: payload.type,
-            data: payload.envelope,
-          });
+          handleJsonASGPacket(payload.envelope, payload.controller_id ?? "controller");
         }
       };
+    }
+
+    function handleJsonASGPacket(envelope: JsonAsgEnvelope, controllerId: string) {
+      const ts = envelope.updated_at ?? new Date().toISOString();
+      const streamPacket: StreamPacket = {
+        id: `${controllerId}-${envelope.Type}-${ts}-${Math.random().toString(36).slice(2)}`,
+        ts,
+        controller_id: controllerId,
+        type: envelope.Type,
+        envelope,
+      };
+      addStreamPacket(streamPacket);
+
+      if (envelope.Type === "Realtime") {
+        return;
+      }
+
+      if (envelope.Type === "Event") {
+        const rows: EventLogRow[] = objectArray(envelope.Packet.Events).map((event, index) => ({
+          id: `${streamPacket.id}-event-${index}`,
+          ts,
+          controller_id: controllerId,
+          category: stringValue(event.category),
+          error_code: stringValue(event.error_code),
+          message: stringValue(event.message),
+          device_id: numberValue(event.device_id),
+          pump_addr: numberValue(event.pump_addr),
+          nozzle_id: numberValue(event.nozzle_id),
+          command: stringValue(event.command),
+          occurred_at: stringValue(event.occurred_at),
+          raw: event,
+        }));
+        addEventLogs(rows);
+        return;
+      }
+
+      if (envelope.Type === "CommandResponse") {
+        const rows: CommandResponseRow[] = objectArray(envelope.Packet.CommandResponses).map((response, index) => ({
+          id: `${streamPacket.id}-command-${index}`,
+          ts,
+          controller_id: controllerId,
+          command: stringValue(response.command),
+          response_code: stringValue(response.response_code),
+          success: typeof response.success === "boolean" ? response.success : undefined,
+          message: stringValue(response.message),
+          error_code: stringValue(response.error_code),
+          device_id: numberValue(response.device_id),
+          occurred_at: stringValue(response.occurred_at),
+          raw: response,
+        }));
+        addCommandResponses(rows);
+      }
     }
 
     loadInitial().catch((error) => addEvent({ ts: new Date().toISOString(), level: "error", source: "frontend", message: error.message }));
@@ -57,5 +119,5 @@ export function useDashboardSocket() {
       if (retry) clearTimeout(retry);
       socket?.close();
     };
-  }, [addEvent, setConnected, setControllers, setDevices, setEvents]);
+  }, [addCommandResponses, addEvent, addEventLogs, addStreamPacket, setConnected, setControllers, setDevices, setEvents]);
 }
