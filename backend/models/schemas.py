@@ -11,7 +11,7 @@ def utc_now() -> str:
 class JsonAsgEnvelope(BaseModel):
     Protocol: str
     DeviceID: str
-    Type: Literal["Realtime", "Event", "CommandResponse"]
+    Type: str
     Packet: dict[str, Any] = Field(default_factory=dict)
     updated_at: str | None = None
 

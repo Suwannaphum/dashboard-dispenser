@@ -5,7 +5,13 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { StreamFilter } from "@/lib/types";
 import { useDashboardStore } from "@/stores/dashboard-store";
 
-const filters: StreamFilter[] = ["All", "Realtime", "Event", "CommandResponse"];
+const filters: StreamFilter[] = ["All", "Realtime", "Events"];
+
+function matchesFilter(packet: { type: string }, filter: StreamFilter): boolean {
+  if (filter === "All") return true;
+  if (filter === "Realtime") return packet.type === "Realtime";
+  return packet.type !== "Realtime";
+}
 
 function escapeHtml(value: string) {
   return value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
@@ -33,7 +39,7 @@ export function RawDebug() {
   const clearStreamPackets = useDashboardStore((state) => state.clearStreamPackets);
   const rawRef = useRef<HTMLDivElement | null>(null);
   const filtered = useMemo(
-    () => streamPackets.filter((packet) => streamFilter === "All" || packet.type === streamFilter),
+    () => streamPackets.filter((packet) => matchesFilter(packet, streamFilter)),
     [streamFilter, streamPackets],
   );
 
@@ -57,7 +63,7 @@ export function RawDebug() {
             onClick={() => setStreamFilter(filter)}
             className={`rounded border px-3 py-1.5 font-mono text-xs ${streamFilter === filter ? "border-cyanline bg-cyanline/10 text-cyanline" : "border-line text-slate-400"}`}
           >
-            {filter === "Event" ? "Events" : filter === "CommandResponse" ? "CommandResponses" : filter}
+            {filter}
           </button>
         ))}
         <button onClick={clearStreamPackets} className="ml-auto rounded border border-line p-1.5 text-slate-300 hover:text-white" title="Clear raw stream">

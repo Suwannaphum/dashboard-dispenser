@@ -2,11 +2,16 @@
 
 import { useEffect } from "react";
 import { WS_BASE, api } from "@/lib/api";
-import type { CommandResponseRow, EventLogRow, JsonAsgEnvelope, StreamPacket } from "@/lib/types";
+import type { EventLogRow, JsonAsgEnvelope, StreamPacket } from "@/lib/types";
 import { useDashboardStore } from "@/stores/dashboard-store";
 
 function numberValue(value: unknown): number | undefined {
-  return typeof value === "number" ? value : undefined;
+  if (typeof value === "number") return value;
+  if (typeof value === "string" && value.trim()) {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : undefined;
+  }
+  return undefined;
 }
 
 function stringValue(value: unknown): string | undefined {
@@ -15,6 +20,10 @@ function stringValue(value: unknown): string | undefined {
 
 function objectArray(value: unknown): Record<string, unknown>[] {
   return Array.isArray(value) ? value.filter((item): item is Record<string, unknown> => typeof item === "object" && item !== null && !Array.isArray(item)) : [];
+}
+
+function eventRows(envelope: JsonAsgEnvelope): Record<string, unknown>[] {
+  return objectArray(envelope.Packet.event);
 }
 
 function isMissingSequenceResponse(response: Record<string, unknown>): boolean {
@@ -28,7 +37,6 @@ export function useDashboardSocket() {
   const setEvents = useDashboardStore((state) => state.setEvents);
   const addEvent = useDashboardStore((state) => state.addEvent);
   const addEventLogs = useDashboardStore((state) => state.addEventLogs);
-  const addCommandResponses = useDashboardStore((state) => state.addCommandResponses);
   const addStreamPacket = useDashboardStore((state) => state.addStreamPacket);
   const setConnected = useDashboardStore((state) => state.setConnected);
 
@@ -79,42 +87,31 @@ export function useDashboardSocket() {
         return;
       }
 
-      if (envelope.Type === "Event") {
-        const rows: EventLogRow[] = objectArray(envelope.Packet.Events).map((event, index) => ({
+      const rows = eventRows(envelope);
+      if (rows.length > 0) {
+        const eventLogs: EventLogRow[] = rows.map((event, index) => ({
           id: `${streamPacket.id}-event-${index}`,
           ts,
           controller_id: controllerId,
+          envelope_type: envelope.Type,
           category: stringValue(event.category),
+          event: stringValue(event.event),
+          level: stringValue(event.level),
           error_code: stringValue(event.error_code),
           message: stringValue(event.message),
+          detail: stringValue(event.detail),
+          response_code: stringValue(event.response_code),
+          success: typeof event.success === "boolean" ? event.success : undefined,
           device_id: numberValue(event.device_id),
           pump_addr: numberValue(event.pump_addr),
           nozzle_id: numberValue(event.nozzle_id),
           command: stringValue(event.command),
+          timeout_ms: numberValue(event.timeout_ms),
           occurred_at: stringValue(event.occurred_at),
           raw: event,
         }));
-        addEventLogs(rows);
-        return;
-      }
-
-      if (envelope.Type === "CommandResponse") {
-        const responses = objectArray(envelope.Packet.CommandResponses);
-        const rows: CommandResponseRow[] = responses.map((response, index) => ({
-          id: `${streamPacket.id}-command-${index}`,
-          ts,
-          controller_id: controllerId,
-          command: stringValue(response.command),
-          response_code: stringValue(response.response_code),
-          success: typeof response.success === "boolean" ? response.success : undefined,
-          message: stringValue(response.message),
-          error_code: stringValue(response.error_code),
-          device_id: numberValue(response.device_id),
-          occurred_at: stringValue(response.occurred_at),
-          raw: response,
-        }));
-        addCommandResponses(rows);
-        if (responses.some(isMissingSequenceResponse)) {
+        addEventLogs(eventLogs);
+        if (rows.some(isMissingSequenceResponse)) {
           addEvent({
             ts,
             level: "error",
@@ -133,5 +130,5 @@ export function useDashboardSocket() {
       if (retry) clearTimeout(retry);
       socket?.close();
     };
-  }, [addCommandResponses, addEvent, addEventLogs, addStreamPacket, setConnected, setControllers, setDevices, setEvents]);
+  }, [addEvent, addEventLogs, addStreamPacket, setConnected, setControllers, setDevices, setEvents]);
 }

@@ -38,7 +38,7 @@ export type EventEntry = {
   data?: Record<string, unknown>;
 };
 
-export type JsonAsgType = "Realtime" | "Event" | "CommandResponse";
+export type JsonAsgType = string;
 
 export type JsonAsgEnvelope = {
   Protocol: "jsonASG";
@@ -48,7 +48,7 @@ export type JsonAsgEnvelope = {
   updated_at?: string;
 };
 
-export type StreamFilter = JsonAsgType | "All";
+export type StreamFilter = "All" | "Realtime" | "Events";
 
 export type StreamPacket = {
   id: string;
@@ -62,27 +62,20 @@ export type EventLogRow = {
   id: string;
   ts: string;
   controller_id: string;
+  envelope_type: string;
   category?: string;
+  event?: string;
+  level?: string;
   error_code?: string;
   message?: string;
+  detail?: string;
+  response_code?: string;
+  success?: boolean;
   device_id?: number;
   pump_addr?: number;
   nozzle_id?: number;
   command?: string;
-  occurred_at?: string;
-  raw: Record<string, unknown>;
-};
-
-export type CommandResponseRow = {
-  id: string;
-  ts: string;
-  controller_id: string;
-  command?: string;
-  response_code?: string;
-  success?: boolean;
-  message?: string;
-  error_code?: string;
-  device_id?: number;
+  timeout_ms?: number;
   occurred_at?: string;
   raw: Record<string, unknown>;
 };

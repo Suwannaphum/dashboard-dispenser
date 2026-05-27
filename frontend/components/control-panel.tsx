@@ -12,7 +12,7 @@ export function ControlPanel() {
   const [presetMode, setPresetMode] = useState("amount");
   const [presetValue, setPresetValue] = useState("150");
   const [price, setPrice] = useState("52.47");
-  const [monitorMode, setMonitorMode] = useState("85");
+  const [monitorMode, setMonitorMode] = useState("");
   const [sequence, setSequence] = useState("");
   const [manual, setManual] = useState('{"action":"start"}');
 
@@ -41,6 +41,15 @@ export function ControlPanel() {
       return;
     }
     send({ action: "cancelPreset", params: { sequence: Number(trimmedSequence) } });
+  }
+
+  function sendMonitorMode() {
+    const trimmedMonitorMode = monitorMode.trim();
+    if (!trimmedMonitorMode) {
+      send({ action: "setMonitorMode" });
+      return;
+    }
+    send({ action: "setMonitorMode", params: { monitorMode: Number(trimmedMonitorMode) } });
   }
 
   return (
@@ -87,8 +96,8 @@ export function ControlPanel() {
         </div>
         <div className="border-t border-line pt-3">
           <div className="grid grid-cols-[1fr_auto] gap-2">
-            <input value={monitorMode} onChange={(event) => setMonitorMode(event.target.value)} className="rounded border border-line bg-[#0b151d] px-2 py-2 text-sm" />
-            <button disabled={!device} onClick={() => send({ action: "setMonitorMode", params: { monitorMode: Number(monitorMode) } })} className="rounded border border-amberline px-3 py-2 text-sm text-amberline disabled:opacity-40">
+            <input value={monitorMode} onChange={(event) => setMonitorMode(event.target.value)} placeholder="mode" className="rounded border border-line bg-[#0b151d] px-2 py-2 text-sm" />
+            <button disabled={!device} onClick={sendMonitorMode} className="rounded border border-amberline px-3 py-2 text-sm text-amberline disabled:opacity-40">
               Monitor
             </button>
           </div>

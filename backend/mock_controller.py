@@ -72,11 +72,13 @@ async def receiver(ws) -> None:
         response = {
             "Protocol": "jsonASG",
             "DeviceID": "Pi4 | S/N: 10000000629f5838",
-            "Type": "CommandResponse",
+            "Type": json.loads(message).get("command", "COMMAND_RESPONSE"),
             "Packet": {
-                "CommandResponses": [
+                "event": [
                     {
                         "category": "command_response",
+                        "event": "COMMAND_RESPONSE",
+                        "level": "info",
                         "device_id": json.loads(message).get("device_id", 201),
                         "pump_addr": 2,
                         "nozzle_id": 1,
@@ -103,11 +105,13 @@ async def sender(ws) -> None:
             event = {
                 "Protocol": "jsonASG",
                 "DeviceID": "Pi4 | S/N: 10000000629f5838",
-                "Type": "Event",
+                "Type": "DISPENSER_ERROR",
                 "Packet": {
-                    "Events": [
+                    "event": [
                         {
                             "category": "dispenser",
+                            "event": "DISPENSER_ERROR",
+                            "level": "error",
                             "error_code": "DISPENSER_TIMEOUT",
                             "message": "dispenser_response_timeout",
                             "device_id": 201,

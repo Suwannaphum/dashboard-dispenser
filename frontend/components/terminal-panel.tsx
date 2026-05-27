@@ -35,20 +35,25 @@ export function TerminalPanel() {
         </div>
       </div>
       <div ref={terminalRef} className="scanline flex-1 overflow-y-auto bg-black/30 p-3 font-mono text-xs">
-        {eventLogs.length === 0 ? <div className="text-slate-500">No Event packets received.</div> : null}
+        {eventLogs.length === 0 ? <div className="text-slate-500">No event packets received.</div> : null}
         {eventLogs.map((event) => (
           <div key={event.id} className="mb-3 rounded border border-line/70 bg-black/20 p-2">
             <div className="mb-1 flex items-center justify-between gap-2">
-              <span className="text-danger">[{event.category ?? "event"}]</span>
+              <span className="text-danger">[{event.envelope_type}]</span>
               <span className="text-slate-600">{event.occurred_at ?? event.ts}</span>
             </div>
-            <div className="text-slate-200">{event.message ?? "Event packet"}</div>
+            <div className="text-slate-200">{event.message || event.detail || "Event packet"}</div>
             <div className="mt-2 grid grid-cols-2 gap-1 text-[11px] text-slate-500">
+              <span>category: <span className="text-slate-300">{event.category || "-"}</span></span>
+              <span>event: <span className="text-slate-300">{event.event || "-"}</span></span>
+              <span>status: <span className={event.success === false ? "text-danger" : event.success === true ? "text-emerald-300" : "text-slate-300"}>{event.success === undefined ? "-" : event.success ? "success" : "failed"}</span></span>
+              <span>response: <span className="text-slate-300">{event.response_code || "-"}</span></span>
               <span>error: <span className="text-danger">{event.error_code || "-"}</span></span>
               <span>device: <span className="text-slate-300">{event.device_id ?? "-"}</span></span>
               <span>pump: <span className="text-slate-300">{event.pump_addr ?? "-"}</span></span>
               <span>nozzle: <span className="text-slate-300">{event.nozzle_id ?? "-"}</span></span>
               <span>command: <span className="text-amberline">{event.command || "-"}</span></span>
+              <span>level: <span className="text-slate-300">{event.level || "-"}</span></span>
               <span>source: <span className="text-cyanline">{event.controller_id}</span></span>
             </div>
           </div>

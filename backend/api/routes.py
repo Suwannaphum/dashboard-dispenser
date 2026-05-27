@@ -50,5 +50,15 @@ async def send_command(controller_id: str, device_id: int, command: BrowserComma
     try:
         payload = await manager.send_command(controller_id, device_id, command)
     except ValueError as exc:
+        await manager.log(
+            "error",
+            "command",
+            str(exc),
+            {
+                "controller_id": controller_id,
+                "device_id": device_id,
+                "command": command.model_dump(),
+            },
+        )
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     return {"ok": True, "sent": payload}
