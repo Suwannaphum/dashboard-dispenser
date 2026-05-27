@@ -197,9 +197,23 @@ class SessionManager:
         if websocket is None:
             await self.log("error", "command", f"{controller_id} is offline")
             raise ValueError("controller is offline")
-        payload = self._translate_command(device_id, command)
+        payload = self._normalize_command_payload(self._translate_command(device_id, command))
         await websocket.send_json(payload)
         await self.log("success", "command", f"sent {payload['command']} to {controller_id}/{device_id}", payload)
+        return payload
+
+    def _normalize_command_payload(self, payload: dict[str, Any]) -> dict[str, Any]:
+        if payload.get("command") != "PRESET":
+            return payload
+
+        params = payload.pop("params", None)
+        if isinstance(params, dict):
+            payload.setdefault("mode", params.get("mode"))
+            payload.setdefault("value", params.get("value"))
+
+        if payload.get("mode") not in {"amount", "volume"} or payload.get("value") is None:
+            raise ValueError("preset requires top-level mode amount|volume and value")
+
         return payload
 
     def _translate_command(self, device_id: int, command: BrowserCommand) -> dict[str, Any]:
@@ -230,10 +244,11 @@ class SessionManager:
                 raise ValueError("setMonitorMode requires monitorMode")
             return base | {"command": "SET_MONITOR_MODE", "monitorMode": monitor_mode}
         if command.action == "cancelPreset":
+            payload = base | {"command": "CANCEL_PRESET"}
             sequence = params.get("sequence")
-            if sequence is None:
-                raise ValueError("cancelPreset requires sequence")
-            return base | {"command": "CANCEL_PRESET", "sequence": sequence}
+            if sequence is not None:
+                payload["sequence"] = sequence
+            return payload
         raise ValueError("unsupported command")
 
     async def log(

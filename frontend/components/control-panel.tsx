@@ -13,7 +13,7 @@ export function ControlPanel() {
   const [presetValue, setPresetValue] = useState("150");
   const [price, setPrice] = useState("52.47");
   const [monitorMode, setMonitorMode] = useState("85");
-  const [sequence, setSequence] = useState("1");
+  const [sequence, setSequence] = useState("");
   const [manual, setManual] = useState('{"action":"start"}');
 
   async function send(command: BrowserCommand) {
@@ -32,6 +32,15 @@ export function ControlPanel() {
     } catch {
       addEvent({ ts: new Date().toISOString(), level: "error", source: "browser", message: "manual JSON is invalid" });
     }
+  }
+
+  function sendCancelPreset() {
+    const trimmedSequence = sequence.trim();
+    if (!trimmedSequence) {
+      send({ action: "cancelPreset" });
+      return;
+    }
+    send({ action: "cancelPreset", params: { sequence: Number(trimmedSequence) } });
   }
 
   return (
@@ -84,8 +93,8 @@ export function ControlPanel() {
             </button>
           </div>
           <div className="mt-2 grid grid-cols-[1fr_auto] gap-2">
-            <input value={sequence} onChange={(event) => setSequence(event.target.value)} className="rounded border border-line bg-[#0b151d] px-2 py-2 text-sm" />
-            <button disabled={!device} onClick={() => send({ action: "cancelPreset", params: { sequence: Number(sequence) } })} className="rounded border border-amberline px-3 py-2 text-sm text-amberline disabled:opacity-40">
+            <input value={sequence} onChange={(event) => setSequence(event.target.value)} placeholder="auto" className="rounded border border-line bg-[#0b151d] px-2 py-2 text-sm" />
+            <button disabled={!device} onClick={sendCancelPreset} className="rounded border border-amberline px-3 py-2 text-sm text-amberline disabled:opacity-40">
               Cancel
             </button>
           </div>

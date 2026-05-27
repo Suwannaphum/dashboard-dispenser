@@ -17,6 +17,11 @@ function objectArray(value: unknown): Record<string, unknown>[] {
   return Array.isArray(value) ? value.filter((item): item is Record<string, unknown> => typeof item === "object" && item !== null && !Array.isArray(item)) : [];
 }
 
+function isMissingSequenceResponse(response: Record<string, unknown>): boolean {
+  const text = JSON.stringify(response).toLowerCase();
+  return text.includes("missing_sequence") || text.includes("missing sequence") || text.includes("missingsequence") || text.includes("sequence=");
+}
+
 export function useDashboardSocket() {
   const setControllers = useDashboardStore((state) => state.setControllers);
   const setDevices = useDashboardStore((state) => state.setDevices);
@@ -94,7 +99,8 @@ export function useDashboardSocket() {
       }
 
       if (envelope.Type === "CommandResponse") {
-        const rows: CommandResponseRow[] = objectArray(envelope.Packet.CommandResponses).map((response, index) => ({
+        const responses = objectArray(envelope.Packet.CommandResponses);
+        const rows: CommandResponseRow[] = responses.map((response, index) => ({
           id: `${streamPacket.id}-command-${index}`,
           ts,
           controller_id: controllerId,
@@ -108,6 +114,14 @@ export function useDashboardSocket() {
           raw: response,
         }));
         addCommandResponses(rows);
+        if (responses.some(isMissingSequenceResponse)) {
+          addEvent({
+            ts,
+            level: "error",
+            source: "command",
+            message: "Cannot auto-cancel preset because no preset sequence is remembered. Enter the sequence manually.",
+          });
+        }
       }
     }
 
