@@ -1,7 +1,7 @@
 import type { BrowserCommand, ControllerInfo, DeviceState, EventEntry } from "./types";
 
-export const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:8000";
-export const WS_BASE = process.env.NEXT_PUBLIC_WS_BASE ?? "ws://localhost:8000";
+export const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? "http://192.168.1.113:9090";
+export const WS_BASE = process.env.NEXT_PUBLIC_WS_BASE ?? "ws://192.168.1.113:9090";
 
 async function getJson<T>(path: string): Promise<T> {
   const response = await fetch(`${API_BASE}${path}`, { cache: "no-store" });
